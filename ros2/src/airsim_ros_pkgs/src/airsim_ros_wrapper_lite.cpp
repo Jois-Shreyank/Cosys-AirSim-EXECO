@@ -1983,6 +1983,18 @@ void AirsimROSWrapperLite::process_and_publish_img_response(const std::vector<Im
         }
         img_response_idx_internal++;
     }
+    auto& vehicle_ros = vehicle_name_ptr_map_.at(vehicle_name);
+
+    if (!vehicle_ros->imu_pubs_.empty()) {
+        const auto& imu_pub = vehicle_ros->imu_pubs_.front();
+        const auto imu_data = airsim_client_->getImuData(imu_pub.sensor_name, vehicle_name);
+
+        sensor_msgs::msg::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
+        imu_msg.header.frame_id = vehicle_name + "/imu";
+        imu_msg.header.stamp = curr_ros_time;// rclcpp::Time(imu_data.time_stamp);  // or use `curr_ros_time` for exact sync
+
+        imu_pub.publisher->publish(imu_msg);
+    }
 }
 
 void AirsimROSWrapperLite::convert_yaml_to_simple_mat(const YAML::Node& node, SimpleMatrix& m) const
